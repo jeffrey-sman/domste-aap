@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>De Domste Aap</title>
+<style>
+  :root {
+    --bg: #f4ead8;
+    --panel: #fffaf0;
+    --ink: #3a2a18;
+    --muted: #8a7557;
+    --accent: #c9792b;
+    --accent-ink: #fff;
+    --ring: #6b4a24;
+    --shadow: rgba(90, 60, 20, 0.22);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #1c1712;
+      --panel: #272019;
+      --ink: #f1e6d4;
+      --muted: #b09a7c;
+      --accent: #e08a3a;
+      --accent-ink: #1c1712;
+      --ring: #e0b483;
+      --shadow: rgba(0, 0, 0, 0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1712;
+    --panel: #272019;
+    --ink: #f1e6d4;
+    --muted: #b09a7c;
+    --accent: #e08a3a;
+    --accent-ink: #1c1712;
+    --ring: #e0b483;
+    --shadow: rgba(0, 0, 0, 0.5);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    background: var(--panel);
+    border-radius: 24px;
+    box-shadow: 0 18px 50px var(--shadow);
+    width: 100%;
+    max-width: 440px;
+    padding: 32px 26px 30px;
+    text-align: center;
+  }
+  .emoji { font-size: 72px; line-height: 1; margin-bottom: 6px; }
+  h1 { font-size: 26px; margin: 8px 0 4px; }
+  p.lead { color: var(--muted); font-size: 16px; margin: 0 0 22px; line-height: 1.5; }
+  button {
+    font: inherit;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border: none;
+    border-radius: 14px;
+    padding: 15px 26px;
+    cursor: pointer;
+    width: 100%;
+    transition: transform .08s ease, filter .15s ease;
+  }
+  button:hover { filter: brightness(1.05); }
+  button:active { transform: scale(0.97); }
+  .stage {
+    position: relative;
+    margin: 0 auto 18px;
+    width: 280px;
+    max-width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #000;
+    border: 6px solid var(--ring);
+    display: none;
+  }
+  video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: block;
+  }
+  .banner {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: rgba(201, 121, 43, 0.92);
+    color: #fff;
+    font-weight: 800;
+    font-size: 19px;
+    padding: 10px 8px;
+    letter-spacing: .3px;
+  }
+  .hidden { display: none !important; }
+  .reveal h1 { margin-top: 2px; }
+  .note {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .again {
+    margin-top: 14px;
+    background: transparent;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+  }
+  .err { color: #b4452a; font-weight: 600; margin-top: 12px; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <div id="intro">
+      <div class="emoji">🐵</div>
+      <h1>Wil je de domste aap zien?</h1>
+      <p class="lead">Hij staat achter deze knop. Echt waar.</p>
+      <button id="go">Ja, laat zien 🍌</button>
+      <p class="note">Je browser vraagt heel even iets. Druk op "Toestaan". 🙈</p>
+      <p id="err" class="err hidden"></p>
+    </div>
+
+    <div id="result" class="reveal hidden">
+      <div class="stage" id="stage">
+        <video id="cam" autoplay playsinline muted></video>
+        <div class="banner">🐵 GEVONDEN! 🐵</div>
+      </div>
+      <h1>Daar is ie! 🙈🍌</h1>
+      <p class="lead">Erin getrapt! Niks opgenomen, gewoon jouw camera. Pagina dicht = alles weg.</p>
+      <button class="again" id="stop">Oké, camera uit</button>
+    </div>
+  </main>
+
+<script>
+  const go = document.getElementById('go');
+  const err = document.getElementById('err');
+  const intro = document.getElementById('intro');
+  const result = document.getElementById('result');
+  const stage = document.getElementById('stage');
+  const cam = document.getElementById('cam');
+  const stop = document.getElementById('stop');
+  let stream = null;
+
+  go.addEventListener('click', async () => {
+    err.classList.add('hidden');
+    go.disabled = true;
+    go.textContent = 'De aap zoeken...';
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+      cam.srcObject = stream;
+      intro.classList.add('hidden');
+      result.classList.remove('hidden');
+      stage.style.display = 'block';
+    } catch (e) {
+      go.disabled = false;
+      go.textContent = 'Toon de aap 🍌';
+      err.classList.remove('hidden');
+      if (e && e.name === 'NotAllowedError') {
+        err.textContent = 'Geen camera-toegang gegeven. Klik nog eens en kies "Toestaan" om de aap te zien.';
+      } else if (e && e.name === 'NotFoundError') {
+        err.textContent = 'Geen camera gevonden op dit apparaat.';
+      } else {
+        err.textContent = 'De camera kon niet starten.';
+      }
+    }
+  });
+
+  function shutdown() {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    cam.srcObject = null;
+    stage.style.display = 'none';
+    result.classList.add('hidden');
+    intro.classList.remove('hidden');
+    go.disabled = false;
+    go.textContent = 'Toon de aap 🍌';
+  }
+  stop.addEventListener('click', shutdown);
+  window.addEventListener('pagehide', shutdown);
+</script>
+</body>
+</html>
